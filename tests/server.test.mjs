@@ -55,7 +55,7 @@ test("landing html uses relative static paths", async () => {
   assert.match(html, /id="get-app-btn"/);
   assert.match(
     html,
-    /href="https:\/\/github\.com\/dksj661\/landing-page-for-ADHD_timebox\/releases\/download\/v0\.3\.0\/ADHD-Timebox-v\.3\.0-arm64\.dmg"/
+    /href="https:\/\/github\.com\/dksjl661\/landing-page-for-ADHD_timebox\/releases\/download\/v0\.3\.0\/ADHD-Timebox-v\.3\.0-arm64\.dmg"/
   );
 });
 
@@ -66,7 +66,7 @@ test("script contains file protocol download fallback", async () => {
   assert.match(script, /window\.location\.protocol === "file:"/);
   assert.match(
     script,
-    /github\.com\/dksj661\/landing-page-for-ADHD_timebox\/releases\/download\/v0\.3\.0\/ADHD-Timebox-v\.3\.0-arm64\.dmg/
+    /github\.com\/dksjl661\/landing-page-for-ADHD_timebox\/releases\/download\/v0\.3\.0\/ADHD-Timebox-v\.3\.0-arm64\.dmg/
   );
   assert.doesNotMatch(script, /Preparing download/);
   assert.doesNotMatch(script, /setTimeout\(/);
@@ -79,7 +79,7 @@ test("redirects to default release URL without env var", async () => {
     assert.equal(response.status, 302);
     assert.equal(
       response.headers.get("location"),
-      "https://github.com/dksj661/landing-page-for-ADHD_timebox/releases/download/v0.3.0/ADHD-Timebox-v.3.0-arm64.dmg"
+      "https://github.com/dksjl661/landing-page-for-ADHD_timebox/releases/download/v0.3.0/ADHD-Timebox-v.3.0-arm64.dmg"
     );
   });
 });

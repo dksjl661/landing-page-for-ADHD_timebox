@@ -14,7 +14,7 @@ const DEFAULT_DOWNLOAD_PATH = path.join(
   DEFAULT_DOWNLOAD_FILE
 );
 const DEFAULT_PUBLIC_DOWNLOAD_URL =
-  "https://github.com/dksj661/landing-page-for-ADHD_timebox/releases/download/v0.3.0/ADHD-Timebox-v.3.0-arm64.dmg";
+  "https://github.com/dksjl661/landing-page-for-ADHD_timebox/releases/download/v0.3.0/ADHD-Timebox-v.3.0-arm64.dmg";
 
 const STATIC_ROUTES = {
   "/": "index.html",
