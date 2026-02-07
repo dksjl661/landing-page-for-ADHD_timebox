@@ -179,6 +179,7 @@ h1 {
   gap: 16px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   margin-top: 22px;
+  contain: layout paint style;
 }
 
 .card {
@@ -205,6 +206,9 @@ h1 {
   border-radius: var(--radius);
   margin-top: 16px;
   padding: 26px;
+  contain: layout paint style;
+  content-visibility: auto;
+  contain-intrinsic-size: 1180px;
 }
 
 .timeline h2 {
@@ -268,6 +272,9 @@ h1 {
   border-radius: var(--radius);
   margin-top: 16px;
   padding: 30px 26px;
+  contain: layout paint style;
+  content-visibility: auto;
+  contain-intrinsic-size: 760px;
 }
 
 .gemini-map h2 {
@@ -415,15 +422,15 @@ footer {
 }
 
 .reveal {
-  animation: reveal-up 420ms ease-out both;
+  animation: reveal-up 1ms linear both;
 }
 
 .reveal:nth-of-type(2) {
-  animation-delay: 30ms;
+  animation-delay: 0ms;
 }
 
 .reveal:nth-of-type(3) {
-  animation-delay: 60ms;
+  animation-delay: 0ms;
 }
 
 @keyframes reveal-up {

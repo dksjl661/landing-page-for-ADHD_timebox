@@ -5,6 +5,7 @@ import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { brotliCompressSync, gzipSync } from "node:zlib";
 
 const ROOT_DIR = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_DOWNLOAD_FILE = "ADHD-Timebox-v.3.0-arm64.dmg";
@@ -23,12 +24,85 @@ const STATIC_ROUTES = {
   "/script.js": "script.js",
 };
 
+const TEXT_EXTENSIONS = new Set([".html", ".css", ".js", ".mjs", ".json", ".txt", ".svg"]);
+const IMMUTABLE_PREFIXES = ["/assets/"];
+const staticCache = new Map();
+
 function contentTypeFor(fileName) {
   const extension = path.extname(fileName).toLowerCase();
   if (extension === ".html") return "text/html; charset=utf-8";
   if (extension === ".css") return "text/css; charset=utf-8";
   if (extension === ".js") return "text/javascript; charset=utf-8";
+  if (extension === ".mjs") return "text/javascript; charset=utf-8";
+  if (extension === ".json") return "application/json; charset=utf-8";
+  if (extension === ".svg") return "image/svg+xml";
+  if (extension === ".png") return "image/png";
+  if (extension === ".jpg" || extension === ".jpeg") return "image/jpeg";
+  if (extension === ".webp") return "image/webp";
   return "application/octet-stream";
+}
+
+function resolveStaticPath(pathname) {
+  if (STATIC_ROUTES[pathname]) {
+    return path.join(ROOT_DIR, STATIC_ROUTES[pathname]);
+  }
+
+  if (pathname.startsWith("/assets/")) {
+    const relativePath = pathname.replace(/^\/+/, "");
+    const absolutePath = path.resolve(ROOT_DIR, relativePath);
+    if (absolutePath.startsWith(`${ROOT_DIR}${path.sep}`)) {
+      return absolutePath;
+    }
+  }
+
+  return null;
+}
+
+function cacheControlFor(pathname, extension) {
+  if (IMMUTABLE_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
+    return "public, max-age=31536000, immutable";
+  }
+  if (TEXT_EXTENSIONS.has(extension) && extension !== ".html") {
+    return "public, max-age=86400";
+  }
+  return "public, max-age=0, must-revalidate";
+}
+
+function shouldCompress(extension) {
+  return TEXT_EXTENSIONS.has(extension);
+}
+
+function selectEncoding(acceptEncoding = "") {
+  if (acceptEncoding.includes("br")) return "br";
+  if (acceptEncoding.includes("gzip")) return "gzip";
+  return "";
+}
+
+async function getStaticEntry(pathname) {
+  const filePath = resolveStaticPath(pathname);
+  if (!filePath) return null;
+
+  const extension = path.extname(filePath).toLowerCase();
+
+  const cached = staticCache.get(filePath);
+  if (cached) return cached;
+
+  const [buffer, stat] = await Promise.all([fsp.readFile(filePath), fsp.stat(filePath)]);
+  const etag = `W/"${stat.size}-${Math.floor(stat.mtimeMs).toString(16)}"`;
+  const compressible = shouldCompress(extension);
+  const entry = {
+    extension,
+    contentType: contentTypeFor(filePath),
+    data: buffer,
+    br: compressible ? brotliCompressSync(buffer) : null,
+    gzip: compressible ? gzipSync(buffer) : null,
+    etag,
+    lastModified: stat.mtime.toUTCString(),
+    cacheControl: cacheControlFor(pathname, extension),
+  };
+
+  staticCache.set(filePath, entry);
+  return entry;
 }
 
 function run(cmd, args) {
@@ -116,28 +190,57 @@ async function prepareDownload(downloadPath) {
 function sendText(response, statusCode, body) {
   response.statusCode = statusCode;
   response.setHeader("content-type", "text/plain; charset=utf-8");
+  response.setHeader("cache-control", "no-store");
   response.end(body);
 }
 
-async function sendStatic(pathname, response) {
-  const fileName = STATIC_ROUTES[pathname];
-  if (!fileName) {
+async function sendStatic(request, response, pathname) {
+  let entry;
+  try {
+    entry = await getStaticEntry(pathname);
+  } catch {
     sendText(response, 404, "Not found.");
     return;
   }
 
-  const filePath = path.join(ROOT_DIR, fileName);
-  let data;
-  try {
-    data = await fsp.readFile(filePath);
-  } catch {
-    sendText(response, 404, `Static file missing: ${fileName}`);
+  if (!entry) {
+    sendText(response, 404, "Not found.");
     return;
   }
 
+  if (request.headers["if-none-match"] === entry.etag) {
+    response.statusCode = 304;
+    response.setHeader("cache-control", entry.cacheControl);
+    response.setHeader("etag", entry.etag);
+    response.setHeader("last-modified", entry.lastModified);
+    response.end();
+    return;
+  }
+
+  const encoding = selectEncoding(request.headers["accept-encoding"] ?? "");
+  let payload = entry.data;
+
+  if (encoding === "br" && entry.br) {
+    payload = entry.br;
+    response.setHeader("content-encoding", "br");
+  } else if (encoding === "gzip" && entry.gzip) {
+    payload = entry.gzip;
+    response.setHeader("content-encoding", "gzip");
+  }
+
   response.statusCode = 200;
-  response.setHeader("content-type", contentTypeFor(fileName));
-  response.end(data);
+  response.setHeader("content-type", entry.contentType);
+  response.setHeader("cache-control", entry.cacheControl);
+  response.setHeader("etag", entry.etag);
+  response.setHeader("last-modified", entry.lastModified);
+  response.setHeader("vary", "Accept-Encoding");
+
+  if (request.method === "HEAD") {
+    response.end();
+    return;
+  }
+
+  response.end(payload);
 }
 
 async function sendDownload(downloadPath, response) {
@@ -199,6 +302,7 @@ export function createServer(options = {}) {
       if (effectivePublicDownloadUrl) {
         response.statusCode = 302;
         response.setHeader("location", effectivePublicDownloadUrl);
+        response.setHeader("cache-control", "no-store");
         response.end();
         return;
       }
@@ -206,7 +310,7 @@ export function createServer(options = {}) {
       return;
     }
 
-    await sendStatic(pathname, response);
+    await sendStatic(request, response, pathname);
   });
 }
 
