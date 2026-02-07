@@ -7,7 +7,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT_DIR = path.dirname(fileURLToPath(import.meta.url));
-const DEFAULT_DOWNLOAD_FILE = "ADHD-Timebox-0.3.0-arm64.dmg";
+const DEFAULT_DOWNLOAD_FILE = "ADHD-Timebox-v.3.0-arm64.dmg";
 const DEFAULT_DOWNLOAD_PATH = path.join(
   ROOT_DIR,
   "downloads",

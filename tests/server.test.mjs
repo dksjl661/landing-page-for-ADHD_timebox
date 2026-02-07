@@ -94,7 +94,7 @@ test("redirects to public download URL when configured", async () => {
     {
       downloadPath: fallbackPath,
       publicDownloadUrl:
-        "https://example.com/releases/ADHD-Timebox-0.3.0-arm64.dmg",
+        "https://example.com/releases/ADHD-Timebox-v.3.0-arm64.dmg",
     },
     async (baseUrl) => {
       const response = await fetch(`${baseUrl}/download`, { redirect: "manual" });
@@ -102,7 +102,7 @@ test("redirects to public download URL when configured", async () => {
       assert.equal(response.status, 302);
       assert.equal(
         response.headers.get("location"),
-        "https://example.com/releases/ADHD-Timebox-0.3.0-arm64.dmg"
+        "https://example.com/releases/ADHD-Timebox-v.3.0-arm64.dmg"
       );
     }
   );
