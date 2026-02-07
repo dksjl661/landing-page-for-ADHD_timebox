@@ -2,3 +2,15 @@
 downloads/
 *.dmg
 downloads/*.dmg
+
+# Dependencies
+node_modules/
+.next/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Environment variables
+.env
+.env.local
+.env*.local
