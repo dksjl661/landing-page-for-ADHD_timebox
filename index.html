@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ADHD-Timebox | Plan Less, Start Faster</title>
+    <meta
+      name="description"
+      content="ADHD-Timebox is an AI-guided desktop app that helps you turn messy thoughts into focused tymeboxes with planning, focus protection, thought parking, and gentle reviews."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="ambient-grid" aria-hidden="true"></div>
+    <header class="topbar">
+      <div class="logo" aria-label="ADHD-Timebox">
+        <span class="logo-ring" aria-hidden="true"></span>
+        <span class="logo-text">ADHD-Timebox</span>
+      </div>
+      <a id="top-download-btn" class="mini-cta" href="./download"
+        >Download for macOS</a
+      >
+    </header>
+
+    <main>
+      <section class="hero reveal">
+        <p class="eyebrow">AI execution coach for ADHD brains</p>
+        <h1>
+          Plan with words.
+          <br />
+          Stay in one box.
+        </h1>
+        <p class="hero-copy">
+          ADHD-Timebox turns scattered ideas into clear 15/30/60-minute focus
+          boxes. It keeps you on track with gentle interventions and lets you
+          park random thoughts without breaking flow.
+        </p>
+        <div class="hero-ctas">
+          <a id="get-app-btn" class="cta-primary" href="./download" download>
+            Get the app
+          </a>
+          <a class="cta-secondary" href="#features">See how it works</a>
+        </div>
+        <p class="fineprint">
+          Deploy setup: set
+          <code>ADHD_TIMEBOX_PUBLIC_DOWNLOAD_URL</code>
+          to a public release link, or include
+          <code>downloads/ADHD-Timebox-0.3.0-arm64.dmg</code>
+          with your deployment.
+        </p>
+      </section>
+
+      <section id="features" class="feature-grid">
+        <article class="card reveal">
+          <h2>Planning Chat</h2>
+          <p>
+            Dump what is in your head. The planner helps shape it into actionable
+            tymeboxes and keeps the start barrier low.
+          </p>
+        </article>
+        <article class="card reveal">
+          <h2>Focus Guardian</h2>
+          <p>
+            During a focus session, the app checks idle time and distraction
+            windows, then nudges you back gently instead of shaming you.
+          </p>
+        </article>
+        <article class="card reveal">
+          <h2>Thought Parking</h2>
+          <p>
+            Got a random urge to check something? Park it in a side sheet so
+            your current task stays intact.
+          </p>
+        </article>
+        <article class="card reveal">
+          <h2>Kind Reviews</h2>
+          <p>
+            Each box ends with simple outcomes: finished, partial, or stuck.
+            You reset without guilt and continue.
+          </p>
+        </article>
+      </section>
+
+      <section class="timeline reveal">
+        <h2>The 4-state loop</h2>
+        <ol>
+          <li><strong>Planning</strong> - Turn intent into a concrete box.</li>
+          <li><strong>Focusing</strong> - Work one task with a running timer.</li>
+          <li><strong>Interrupted</strong> - Log outcome and choose next move.</li>
+          <li><strong>Resting</strong> - Recover, then restart cleanly.</li>
+        </ol>
+      </section>
+    </main>
+
+    <footer>
+      <p>Built for humans with nonlinear attention.</p>
+      <p>
+        <span id="current-year"></span>
+        ADHD-Timebox
+      </p>
+    </footer>
+    <script src="./script.js"></script>
+  </body>
+</html>

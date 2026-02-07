@@ -1,0 +1,223 @@
+import { spawn } from "node:child_process";
+import fs from "node:fs";
+import fsp from "node:fs/promises";
+import http from "node:http";
+import os from "node:os";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const ROOT_DIR = path.dirname(fileURLToPath(import.meta.url));
+const DEFAULT_DOWNLOAD_FILE = "ADHD-Timebox-0.3.0-arm64.dmg";
+const DEFAULT_DOWNLOAD_PATH = path.join(
+  ROOT_DIR,
+  "downloads",
+  DEFAULT_DOWNLOAD_FILE
+);
+
+const STATIC_ROUTES = {
+  "/": "index.html",
+  "/index.html": "index.html",
+  "/styles.css": "styles.css",
+  "/script.js": "script.js",
+};
+
+function contentTypeFor(fileName) {
+  const extension = path.extname(fileName).toLowerCase();
+  if (extension === ".html") return "text/html; charset=utf-8";
+  if (extension === ".css") return "text/css; charset=utf-8";
+  if (extension === ".js") return "text/javascript; charset=utf-8";
+  return "application/octet-stream";
+}
+
+function run(cmd, args) {
+  return new Promise((resolve, reject) => {
+    const child = spawn(cmd, args, { stdio: "ignore" });
+    child.on("error", reject);
+    child.on("exit", (code) => {
+      if (code === 0) resolve();
+      else reject(new Error(`${cmd} exited with code ${code ?? "unknown"}`));
+    });
+  });
+}
+
+function inferArchiveName(sourcePath) {
+  const appName = path.basename(sourcePath, ".app");
+  const parent = path.basename(path.dirname(sourcePath));
+  const versionMatch = parent.match(/(\d+\.\d+\.\d+-[A-Za-z0-9]+)/);
+  if (!versionMatch) return `${appName}.zip`;
+  return `${appName}-${versionMatch[1]}.zip`;
+}
+
+async function prepareDownload(downloadPath) {
+  const sourcePath =
+    downloadPath ??
+    process.env.ADHD_TIMEBOX_DOWNLOAD_PATH ??
+    DEFAULT_DOWNLOAD_PATH;
+
+  let sourceStat;
+  try {
+    sourceStat = await fsp.stat(sourcePath);
+  } catch {
+    return {
+      status: 404,
+      message: `Download source not found: ${sourcePath}`,
+    };
+  }
+
+  if (sourceStat.isFile()) {
+    return {
+      status: 200,
+      sourcePath,
+      fileName: path.basename(sourcePath),
+      cleanup: async () => {},
+    };
+  }
+
+  if (sourceStat.isDirectory() && sourcePath.endsWith(".app")) {
+    const tempDir = await fsp.mkdtemp(path.join(os.tmpdir(), "adhd-timebox-"));
+    const archiveName = inferArchiveName(sourcePath);
+    const archivePath = path.join(tempDir, archiveName);
+
+    try {
+      await run("ditto", [
+        "-c",
+        "-k",
+        "--sequesterRsrc",
+        "--keepParent",
+        sourcePath,
+        archivePath,
+      ]);
+    } catch {
+      await fsp.rm(tempDir, { recursive: true, force: true });
+      return {
+        status: 500,
+        message: "Failed to package app bundle for download.",
+      };
+    }
+
+    return {
+      status: 200,
+      sourcePath: archivePath,
+      fileName: archiveName,
+      cleanup: async () => {
+        await fsp.rm(tempDir, { recursive: true, force: true });
+      },
+    };
+  }
+
+  return {
+    status: 400,
+    message: "Download source must be a file or a macOS .app bundle.",
+  };
+}
+
+function sendText(response, statusCode, body) {
+  response.statusCode = statusCode;
+  response.setHeader("content-type", "text/plain; charset=utf-8");
+  response.end(body);
+}
+
+async function sendStatic(pathname, response) {
+  const fileName = STATIC_ROUTES[pathname];
+  if (!fileName) {
+    sendText(response, 404, "Not found.");
+    return;
+  }
+
+  const filePath = path.join(ROOT_DIR, fileName);
+  let data;
+  try {
+    data = await fsp.readFile(filePath);
+  } catch {
+    sendText(response, 404, `Static file missing: ${fileName}`);
+    return;
+  }
+
+  response.statusCode = 200;
+  response.setHeader("content-type", contentTypeFor(fileName));
+  response.end(data);
+}
+
+async function sendDownload(downloadPath, response) {
+  const publicDownloadUrl = process.env.ADHD_TIMEBOX_PUBLIC_DOWNLOAD_URL;
+  if (publicDownloadUrl) {
+    response.statusCode = 302;
+    response.setHeader("location", publicDownloadUrl);
+    response.end();
+    return;
+  }
+
+  const prepared = await prepareDownload(downloadPath);
+  if (prepared.status !== 200) {
+    sendText(response, prepared.status, prepared.message);
+    return;
+  }
+
+  const { sourcePath, fileName, cleanup } = prepared;
+  let didCleanup = false;
+  const cleanupOnce = async () => {
+    if (didCleanup) return;
+    didCleanup = true;
+    await cleanup();
+  };
+
+  response.statusCode = 200;
+  response.setHeader("content-type", "application/octet-stream");
+  response.setHeader("content-disposition", `attachment; filename="${fileName}"`);
+
+  const stream = fs.createReadStream(sourcePath);
+  stream.on("error", async () => {
+    if (!response.headersSent) {
+      sendText(response, 500, "Failed to read download file.");
+    } else {
+      response.destroy();
+    }
+    await cleanupOnce();
+  });
+
+  response.on("close", () => {
+    void cleanupOnce();
+  });
+
+  stream.pipe(response);
+}
+
+export function createServer(options = {}) {
+  const { downloadPath, publicDownloadUrl } = options;
+
+  return http.createServer(async (request, response) => {
+    const method = request.method ?? "GET";
+    if (!["GET", "HEAD"].includes(method)) {
+      sendText(response, 405, "Method not allowed.");
+      return;
+    }
+
+    const url = new URL(request.url ?? "/", "http://localhost");
+    const pathname = url.pathname;
+
+    if (pathname === "/download") {
+      if (publicDownloadUrl) {
+        response.statusCode = 302;
+        response.setHeader("location", publicDownloadUrl);
+        response.end();
+        return;
+      }
+      await sendDownload(downloadPath, response);
+      return;
+    }
+
+    await sendStatic(pathname, response);
+  });
+}
+
+const currentFilePath = fileURLToPath(import.meta.url);
+const launchedFilePath = process.argv[1] ? path.resolve(process.argv[1]) : "";
+
+if (launchedFilePath === currentFilePath) {
+  const port = Number.parseInt(process.env.PORT ?? "4173", 10);
+  const server = createServer();
+  server.listen(port, () => {
+    // eslint-disable-next-line no-console
+    console.log(`Landing page ready at http://localhost:${port}`);
+  });
+}
