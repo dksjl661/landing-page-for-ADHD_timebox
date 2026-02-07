@@ -52,7 +52,11 @@ test("landing html uses relative static paths", async () => {
 
   assert.match(html, /href="\.\/styles\.css"/);
   assert.match(html, /src="\.\/script\.js"/);
-  assert.match(html, /id="get-app-btn" class="cta-primary" href="\.\/download"/);
+  assert.match(html, /id="get-app-btn"/);
+  assert.match(
+    html,
+    /href="https:\/\/github\.com\/dksj661\/landing-page-for-ADHD_timebox\/releases\/download\/v0\.3\.0\/ADHD-Timebox-v\.3\.0-arm64\.dmg"/
+  );
 });
 
 test("script contains file protocol download fallback", async () => {
