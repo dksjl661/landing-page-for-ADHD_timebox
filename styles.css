@@ -174,18 +174,6 @@ h1 {
   transform: translateY(-1px);
 }
 
-.fineprint {
-  color: #52627b;
-  font-size: 13px;
-  margin-top: 18px;
-}
-
-code {
-  background: rgba(17, 24, 39, 0.08);
-  border-radius: 8px;
-  padding: 3px 7px;
-}
-
 .feature-grid {
   display: grid;
   gap: 16px;
@@ -239,6 +227,142 @@ code {
   color: var(--text);
 }
 
+.gemini-map {
+  background: #ffffff;
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius);
+  margin-top: 16px;
+  padding: 30px 26px;
+}
+
+.gemini-map h2 {
+  margin: 0;
+}
+
+.gemini-map-copy {
+  color: var(--muted);
+  line-height: 1.7;
+  margin: 12px 0 0;
+  max-width: 66ch;
+}
+
+.gemini-graph {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(37, 99, 235, 0.13) 0%, rgba(37, 99, 235, 0) 52%),
+    linear-gradient(180deg, rgba(30, 64, 175, 0.05) 0%, rgba(30, 64, 175, 0) 100%);
+  border: 1px solid rgba(30, 64, 175, 0.17);
+  border-radius: var(--radius);
+  margin-top: 22px;
+  min-height: 540px;
+  position: relative;
+}
+
+.gemini-core {
+  align-items: center;
+  animation: core-pulse 2.6s ease-in-out infinite;
+  background: linear-gradient(135deg, var(--primary) 0%, #2563eb 100%);
+  border-radius: 999px;
+  box-shadow: 0 18px 38px rgba(30, 64, 175, 0.34);
+  color: #ffffff;
+  display: flex;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.3rem;
+  font-weight: 700;
+  height: 140px;
+  justify-content: center;
+  left: 50%;
+  letter-spacing: 0.02em;
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 140px;
+}
+
+.gemini-line {
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.9) 0%, rgba(37, 99, 235, 0.2) 100%);
+  border-radius: 999px;
+  position: absolute;
+}
+
+.gemini-line-top {
+  height: 74px;
+  left: 50%;
+  top: 127px;
+  transform: translateX(-50%);
+  width: 3px;
+}
+
+.gemini-line-right {
+  height: 3px;
+  right: 153px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 108px;
+}
+
+.gemini-line-bottom {
+  height: 74px;
+  left: 50%;
+  top: calc(50% + 70px);
+  transform: translateX(-50%);
+  width: 3px;
+}
+
+.gemini-line-left {
+  height: 3px;
+  left: 153px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 108px;
+}
+
+.gemini-node {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(30, 64, 175, 0.16);
+  border-radius: 14px;
+  box-shadow: 0 10px 26px rgba(30, 41, 59, 0.12);
+  padding: 15px 16px;
+  position: absolute;
+  width: min(230px, calc(100% - 24px));
+}
+
+.gemini-node h3 {
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+.gemini-node p {
+  color: var(--muted);
+  font-size: 0.94rem;
+  line-height: 1.5;
+  margin: 8px 0 0;
+}
+
+.gemini-node-top {
+  left: 50%;
+  top: 24px;
+  transform: translateX(-50%);
+}
+
+.gemini-node-right {
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.gemini-node-bottom {
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.gemini-node-left {
+  left: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
 footer {
   align-items: center;
   border-top: 1px solid rgba(30, 41, 59, 0.12);
@@ -276,6 +400,17 @@ footer {
   }
 }
 
+@keyframes core-pulse {
+  0%,
+  100% {
+    box-shadow: 0 18px 38px rgba(30, 64, 175, 0.34);
+  }
+
+  50% {
+    box-shadow: 0 24px 46px rgba(30, 64, 175, 0.44);
+  }
+}
+
 @media (max-width: 880px) {
   .feature-grid {
     grid-template-columns: 1fr;
@@ -293,6 +428,32 @@ footer {
     font-size: 13px;
     padding: 9px 12px;
   }
+
+  .gemini-graph {
+    min-height: 720px;
+  }
+
+  .gemini-core {
+    height: 122px;
+    width: 122px;
+  }
+
+  .gemini-node {
+    width: min(84%, 330px);
+  }
+
+  .gemini-line-right,
+  .gemini-line-left {
+    width: 78px;
+  }
+
+  .gemini-line-right {
+    right: 122px;
+  }
+
+  .gemini-line-left {
+    left: 122px;
+  }
 }
 
 @media (max-width: 600px) {
@@ -305,6 +466,33 @@ footer {
   footer {
     gap: 8px;
   }
+
+  .gemini-map {
+    padding: 24px 16px;
+  }
+
+  .gemini-graph {
+    background: linear-gradient(180deg, rgba(30, 64, 175, 0.05) 0%, rgba(30, 64, 175, 0) 100%);
+    min-height: auto;
+    padding: 22px 10px;
+  }
+
+  .gemini-core {
+    margin: 8px auto 10px;
+    position: static;
+    transform: none;
+  }
+
+  .gemini-node {
+    margin: 10px auto;
+    position: static;
+    transform: none;
+    width: calc(100% - 8px);
+  }
+
+  .gemini-line {
+    display: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -316,5 +504,9 @@ footer {
   .cta-primary,
   .cta-secondary {
     transition: none;
+  }
+
+  .gemini-core {
+    animation: none;
   }
 }
