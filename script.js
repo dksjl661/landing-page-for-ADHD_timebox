@@ -5,7 +5,8 @@ if (yearNode) {
 
 const getAppButton = document.querySelector("#get-app-btn");
 const topDownloadButton = document.querySelector("#top-download-btn");
-const fileModeInstallerPath = "./downloads/ADHD-Timebox-0.3.0-arm64.dmg";
+const fileModeInstallerPath =
+  "https://github.com/dksj661/landing-page-for-ADHD_timebox/releases/download/v0.3.0/ADHD-Timebox-v.3.0-arm64.dmg";
 
 if (window.location.protocol === "file:") {
   if (getAppButton) {

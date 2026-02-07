@@ -62,10 +62,22 @@ test("script contains file protocol download fallback", async () => {
   assert.match(script, /window\.location\.protocol === "file:"/);
   assert.match(
     script,
-    /\.\/downloads\/ADHD-Timebox-0\.3\.0-arm64\.dmg/
+    /github\.com\/dksj661\/landing-page-for-ADHD_timebox\/releases\/download\/v0\.3\.0\/ADHD-Timebox-v\.3\.0-arm64\.dmg/
   );
   assert.doesNotMatch(script, /Preparing download/);
   assert.doesNotMatch(script, /setTimeout\(/);
+});
+
+test("redirects to default release URL without env var", async () => {
+  await withServer({}, async (baseUrl) => {
+    const response = await fetch(`${baseUrl}/download`, { redirect: "manual" });
+
+    assert.equal(response.status, 302);
+    assert.equal(
+      response.headers.get("location"),
+      "https://github.com/dksj661/landing-page-for-ADHD_timebox/releases/download/v0.3.0/ADHD-Timebox-v.3.0-arm64.dmg"
+    );
+  });
 });
 
 test("redirects to public download URL when configured", async () => {
@@ -99,7 +111,7 @@ test("downloads binary when source file exists", async () => {
   const payload = "download-content";
   await fs.writeFile(sourcePath, payload, "utf8");
 
-  await withServer({ downloadPath: sourcePath }, async (baseUrl) => {
+  await withServer({ downloadPath: sourcePath, publicDownloadUrl: "" }, async (baseUrl) => {
     const response = await fetch(`${baseUrl}/download`);
     const body = await response.text();
 
@@ -114,7 +126,7 @@ test("downloads binary when source file exists", async () => {
 
 test("returns 404 when download source is missing", async () => {
   await withServer(
-    { downloadPath: "/tmp/does-not-exist/ADHD-Timebox.dmg" },
+    { downloadPath: "/tmp/does-not-exist/ADHD-Timebox.dmg", publicDownloadUrl: "" },
     async (baseUrl) => {
       const response = await fetch(`${baseUrl}/download`);
       const body = await response.text();
@@ -136,7 +148,7 @@ test("packages .app bundle and downloads zip", async () => {
     "utf8"
   );
 
-  await withServer({ downloadPath: appDir }, async (baseUrl) => {
+  await withServer({ downloadPath: appDir, publicDownloadUrl: "" }, async (baseUrl) => {
     const response = await fetch(`${baseUrl}/download`);
     const bytes = new Uint8Array(await response.arrayBuffer());
 

@@ -13,6 +13,8 @@ const DEFAULT_DOWNLOAD_PATH = path.join(
   "downloads",
   DEFAULT_DOWNLOAD_FILE
 );
+const DEFAULT_PUBLIC_DOWNLOAD_URL =
+  "https://github.com/dksj661/landing-page-for-ADHD_timebox/releases/download/v0.3.0/ADHD-Timebox-v.3.0-arm64.dmg";
 
 const STATIC_ROUTES = {
   "/": "index.html",
@@ -139,14 +141,6 @@ async function sendStatic(pathname, response) {
 }
 
 async function sendDownload(downloadPath, response) {
-  const publicDownloadUrl = process.env.ADHD_TIMEBOX_PUBLIC_DOWNLOAD_URL;
-  if (publicDownloadUrl) {
-    response.statusCode = 302;
-    response.setHeader("location", publicDownloadUrl);
-    response.end();
-    return;
-  }
-
   const prepared = await prepareDownload(downloadPath);
   if (prepared.status !== 200) {
     sendText(response, prepared.status, prepared.message);
@@ -196,9 +190,15 @@ export function createServer(options = {}) {
     const pathname = url.pathname;
 
     if (pathname === "/download") {
-      if (publicDownloadUrl) {
+      const effectivePublicDownloadUrl =
+        typeof publicDownloadUrl === "string"
+          ? publicDownloadUrl
+          : process.env.ADHD_TIMEBOX_PUBLIC_DOWNLOAD_URL ??
+            DEFAULT_PUBLIC_DOWNLOAD_URL;
+
+      if (effectivePublicDownloadUrl) {
         response.statusCode = 302;
-        response.setHeader("location", publicDownloadUrl);
+        response.setHeader("location", effectivePublicDownloadUrl);
         response.end();
         return;
       }
