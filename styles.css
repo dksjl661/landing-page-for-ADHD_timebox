@@ -12,6 +12,18 @@
   --radius: 18px;
 }
 
+@font-face {
+  font-family: "Plus Jakarta Sans";
+  src: local("Plus Jakarta Sans");
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Space Grotesk";
+  src: local("Space Grotesk");
+  font-display: swap;
+}
+
 * {
   box-sizing: border-box;
 }

@@ -27,6 +27,31 @@ const STATIC_ROUTES = {
 const TEXT_EXTENSIONS = new Set([".html", ".css", ".js", ".mjs", ".json", ".txt", ".svg"]);
 const IMMUTABLE_PREFIXES = ["/assets/"];
 const staticCache = new Map();
+const PREWARM_PATHS = [
+  "/",
+  "/styles.css",
+  "/script.js",
+  "/assets/states/planning.jpg",
+  "/assets/states/focusing.jpg",
+  "/assets/states/interrupted.jpg",
+  "/assets/states/resting.jpg",
+];
+
+function buildStaticEntry(pathname, filePath, buffer, stat) {
+  const extension = path.extname(filePath).toLowerCase();
+  const etag = `W/"${stat.size}-${Math.floor(stat.mtimeMs).toString(16)}"`;
+  const compressible = shouldCompress(extension);
+  return {
+    extension,
+    contentType: contentTypeFor(filePath),
+    data: buffer,
+    br: compressible ? brotliCompressSync(buffer) : null,
+    gzip: compressible ? gzipSync(buffer) : null,
+    etag,
+    lastModified: stat.mtime.toUTCString(),
+    cacheControl: cacheControlFor(pathname, extension),
+  };
+}
 
 function contentTypeFor(fileName) {
   const extension = path.extname(fileName).toLowerCase();
@@ -62,10 +87,13 @@ function cacheControlFor(pathname, extension) {
   if (IMMUTABLE_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
     return "public, max-age=31536000, immutable";
   }
-  if (TEXT_EXTENSIONS.has(extension) && extension !== ".html") {
-    return "public, max-age=86400";
+  if (extension === ".html") {
+    return "public, max-age=3600, stale-while-revalidate=86400";
   }
-  return "public, max-age=0, must-revalidate";
+  if (TEXT_EXTENSIONS.has(extension) && extension !== ".html") {
+    return "public, max-age=604800";
+  }
+  return "public, max-age=300";
 }
 
 function shouldCompress(extension) {
@@ -82,27 +110,28 @@ async function getStaticEntry(pathname) {
   const filePath = resolveStaticPath(pathname);
   if (!filePath) return null;
 
-  const extension = path.extname(filePath).toLowerCase();
-
   const cached = staticCache.get(filePath);
   if (cached) return cached;
 
   const [buffer, stat] = await Promise.all([fsp.readFile(filePath), fsp.stat(filePath)]);
-  const etag = `W/"${stat.size}-${Math.floor(stat.mtimeMs).toString(16)}"`;
-  const compressible = shouldCompress(extension);
-  const entry = {
-    extension,
-    contentType: contentTypeFor(filePath),
-    data: buffer,
-    br: compressible ? brotliCompressSync(buffer) : null,
-    gzip: compressible ? gzipSync(buffer) : null,
-    etag,
-    lastModified: stat.mtime.toUTCString(),
-    cacheControl: cacheControlFor(pathname, extension),
-  };
-
+  const entry = buildStaticEntry(pathname, filePath, buffer, stat);
   staticCache.set(filePath, entry);
   return entry;
+}
+
+function prewarmStaticCache() {
+  for (const pathname of PREWARM_PATHS) {
+    try {
+      const filePath = resolveStaticPath(pathname);
+      if (!filePath) continue;
+      if (staticCache.has(filePath)) continue;
+      const buffer = fs.readFileSync(filePath);
+      const stat = fs.statSync(filePath);
+      staticCache.set(filePath, buildStaticEntry(pathname, filePath, buffer, stat));
+    } catch {
+      // Best-effort prewarm.
+    }
+  }
 }
 
 function run(cmd, args) {
@@ -281,6 +310,7 @@ async function sendDownload(downloadPath, response) {
 
 export function createServer(options = {}) {
   const { downloadPath, publicDownloadUrl } = options;
+  prewarmStaticCache();
 
   return http.createServer(async (request, response) => {
     const method = request.method ?? "GET";
